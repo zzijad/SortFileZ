@@ -17,6 +17,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- WPF ne uključuje System.IO automatski -->
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="app.ico" />
   </ItemGroup>
 

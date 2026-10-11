@@ -1,0 +1,121 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
+namespace SortFileZ;
+
+public abstract class ObservableObject : INotifyPropertyChanged
+{
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected bool Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        field = value;
+        OnPropertyChanged(name);
+        return true;
+    }
+
+    protected void OnPropertyChanged(string? name) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+
+public enum SortMode { ByType, ByDate, ByName, OwnFolder, SingleFolder, None }
+
+// Redosled odgovara stavkama u padajućim listama
+public enum DateSource { Created = 0, Modified = 1, Today = 2 }
+public enum DateGranularity { Day = 0, Month = 1, Year = 2 }
+public enum NameGrouping { Prefix, FirstLetter }
+public enum ItemState { Ready, Done, Skipped, Error }
+
+public sealed class SortOptions
+{
+    public SortMode Mode { get; set; } = SortMode.ByType;
+
+    // Sortiranje po datumu
+    public DateSource FolderDateSource { get; set; } = DateSource.Created;
+    public DateGranularity Granularity { get; set; } = DateGranularity.Day;
+    public bool IsoDateFormat { get; set; } = true;
+
+    // Sortiranje po imenu
+    public NameGrouping NameGrouping { get; set; } = NameGrouping.Prefix;
+
+    // Jedan folder
+    public string SingleFolderName { get; set; } = "";
+
+    // Preimenovanje
+    public bool Rename { get; set; }
+    public bool RenameUseName { get; set; } = true;
+    public string RenameName { get; set; } = "";
+    public bool RenameUseDate { get; set; }
+    public DateSource RenameDateSource { get; set; } = DateSource.Created;
+    public bool RenameUseNumber { get; set; } = true;
+    public int StartNumber { get; set; } = 1;
+    public int Digits { get; set; } = 3;
+    public string Separator { get; set; } = "_";
+    public bool NumberPerFolder { get; set; } = true;
+    public bool NumberOrderByDate { get; set; }
+
+    // Izvršavanje
+    public bool Copy { get; set; }
+    public string DestinationRoot { get; set; } = "";
+}
+
+public sealed class ExtensionGroup : ObservableObject
+{
+    public string Extension { get; init; } = "";
+    public int Count { get; init; }
+    public long TotalBytes { get; init; }
+
+    public string DisplayExtension => string.IsNullOrEmpty(Extension) ? Loc.T("NoExtDisplay") : Extension;
+    public string SizeText => SortEngine.FormatSize(TotalBytes);
+
+    private bool _isSelected = true;
+    public bool IsSelected { get => _isSelected; set => Set(ref _isSelected, value); }
+
+    private string _folderName = "";
+    public string FolderName { get => _folderName; set => Set(ref _folderName, value); }
+}
+
+public sealed class PreviewItem : ObservableObject
+{
+    public string SourcePath { get; init; } = "";
+    public string OriginalName { get; init; } = "";
+    public DateTime Created { get; init; }
+
+    private string _newName = "";
+    public string NewName { get => _newName; set => Set(ref _newName, value); }
+
+    private string _targetFolder = "";
+    public string TargetFolder { get => _targetFolder; set => Set(ref _targetFolder, value); }
+
+    public bool IsCopy { get; set; }
+    public string ErrorMessage { get; private set; } = "";
+
+    private ItemState _state = ItemState.Ready;
+    public ItemState State
+    {
+        get => _state;
+        set
+        {
+            if (Set(ref _state, value)) RefreshStatus();
+        }
+    }
+
+    /// <summary>Tekst statusa se računa iz stanja, pa prati izabrani jezik.</summary>
+    public string Status => State switch
+    {
+        ItemState.Done => Loc.T(IsCopy ? "StCopied" : "StMoved"),
+        ItemState.Skipped => Loc.T("StNoChange"),
+        ItemState.Error => Loc.F("StError", ErrorMessage),
+        _ => Loc.T("StReady")
+    };
+
+    public void SetError(string message)
+    {
+        ErrorMessage = message;
+        State = ItemState.Error;
+        RefreshStatus();
+    }
+
+    public void RefreshStatus() => OnPropertyChanged(nameof(Status));
+}

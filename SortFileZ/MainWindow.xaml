@@ -1,0 +1,389 @@
+<Window x:Class="SortFileZ.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:SortFileZ"
+        DataContext="{x:Static local:Loc.Instance}"
+        Title="SortFileZ"
+        Height="820" Width="1300" MinHeight="640" MinWidth="1020"
+        WindowStartupLocation="CenterScreen"
+        Icon="app.ico"
+        AllowDrop="True" Drop="Window_Drop"
+        Closing="Window_Closing">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+
+        <Style x:Key="CardTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style x:Key="Sub" TargetType="StackPanel">
+            <Setter Property="Margin" Value="28,2,0,10" />
+        </Style>
+
+        <Style x:Key="StatusCell" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="8,0" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding State}" Value="Error">
+                    <Setter Property="Foreground" Value="#D13438" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="Done">
+                    <Setter Property="Foreground" Value="#2E9E2E" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel>
+    <Menu DockPanel.Dock="Top" Padding="12,2">
+        <MenuItem Header="{Binding [MenuLanguage]}">
+            <MenuItem x:Name="MiSerbian" Header="Srpski" IsCheckable="True" Click="LangSerbian_Click" />
+            <MenuItem x:Name="MiEnglish" Header="English" IsCheckable="True" Click="LangEnglish_Click" />
+        </MenuItem>
+        <MenuItem Header="{Binding [MenuHelp]}">
+            <MenuItem Header="{Binding [MenuAbout]}" Click="About_Click" />
+        </MenuItem>
+    </Menu>
+
+    <Grid Margin="20,8,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ===================== Zaglavlje ===================== -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel VerticalAlignment="Center" Margin="0,0,28,0">
+                <TextBlock Text="SortFileZ" FontSize="26" FontWeight="SemiBold" />
+                <TextBlock Style="{StaticResource Hint}" Text="{Binding [Subtitle]}" />
+            </StackPanel>
+
+            <TextBox x:Name="FolderBox" Grid.Column="1" VerticalAlignment="Center"
+                     KeyDown="FolderBox_KeyDown"
+                     ToolTip="{Binding [FolderTip]}" />
+            <Button x:Name="BrowseBtn" Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center"
+                    Content="{Binding [Browse]}" Click="BrowseFolder_Click" />
+            <Button x:Name="ScanBtn" Grid.Column="3" Margin="8,0,0,0" MinWidth="110" VerticalAlignment="Center"
+                    Content="{Binding [Scan]}" Style="{DynamicResource AccentButtonStyle}" Click="Scan_Click" />
+        </Grid>
+
+        <!-- ===================== Sredina ===================== -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="380" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ===== Opcije (levo) ===== -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+                <StackPanel x:Name="OptionsPanel">
+
+                    <!-- 1. Način sortiranja -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{Binding [Card1]}" />
+
+                            <RadioButton x:Name="RbType" GroupName="Mode" IsChecked="True"
+                                         Content="{Binding [ModeType]}" />
+                            <StackPanel Style="{StaticResource Sub}"
+                                        Visibility="{Binding IsChecked, ElementName=RbType, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource Hint}"
+                                           Text="{Binding [ModeTypeHint]}" />
+                            </StackPanel>
+
+                            <RadioButton x:Name="RbDate" GroupName="Mode" Content="{Binding [ModeDate]}" />
+                            <StackPanel Style="{StaticResource Sub}"
+                                        Visibility="{Binding IsChecked, ElementName=RbDate, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource Hint}" Text="{Binding [WhichDate]}" />
+                                <ComboBox x:Name="CbFolderDate" SelectedIndex="0" Margin="0,2,0,8" HorizontalAlignment="Stretch">
+                                    <ComboBoxItem Content="{Binding [DateCreated]}" />
+                                    <ComboBoxItem Content="{Binding [DateModified]}" />
+                                    <ComboBoxItem Content="{Binding [DateToday]}" />
+                                </ComboBox>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource Hint}" Text="{Binding [FolderPer]}" />
+                                        <ComboBox x:Name="CbGranularity" SelectedIndex="0" Margin="0,2,0,0" HorizontalAlignment="Stretch">
+                                            <ComboBoxItem Content="{Binding [Day]}" />
+                                            <ComboBoxItem Content="{Binding [Month]}" />
+                                            <ComboBoxItem Content="{Binding [Year]}" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Style="{StaticResource Hint}" Text="{Binding [DateFormat]}" />
+                                        <ComboBox x:Name="CbDateFormat" SelectedIndex="0" Margin="0,2,0,0" HorizontalAlignment="Stretch">
+                                            <ComboBoxItem Content="2026-10-11" />
+                                            <ComboBoxItem Content="11.10.2026" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,0"
+                                           Text="{Binding [DateNote]}" />
+                            </StackPanel>
+
+                            <RadioButton x:Name="RbName" GroupName="Mode" Content="{Binding [ModeName]}" />
+                            <StackPanel Style="{StaticResource Sub}"
+                                        Visibility="{Binding IsChecked, ElementName=RbName, Converter={StaticResource BoolToVis}}">
+                                <RadioButton x:Name="RbPrefix" GroupName="NameGroup" IsChecked="True"
+                                             Content="{Binding [NamePrefix]}" />
+                                <RadioButton x:Name="RbFirstLetter" GroupName="NameGroup"
+                                             Content="{Binding [NameLetter]}" />
+                            </StackPanel>
+
+                            <RadioButton x:Name="RbOwn" GroupName="Mode" Content="{Binding [ModeOwn]}" />
+                            <StackPanel Style="{StaticResource Sub}"
+                                        Visibility="{Binding IsChecked, ElementName=RbOwn, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource Hint}"
+                                           Text="{Binding [ModeOwnHint]}" />
+                            </StackPanel>
+
+                            <RadioButton x:Name="RbSingle" GroupName="Mode" Content="{Binding [ModeSingle]}" />
+                            <StackPanel Style="{StaticResource Sub}"
+                                        Visibility="{Binding IsChecked, ElementName=RbSingle, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource Hint}" Text="{Binding [FolderName]}" />
+                                <TextBox x:Name="SingleFolderBox" Margin="0,2,0,0" />
+                            </StackPanel>
+
+                            <RadioButton x:Name="RbNone" GroupName="Mode" Content="{Binding [ModeNone]}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 2. Preimenovanje -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{Binding [Card2]}" />
+                            <CheckBox x:Name="ChkRename" Content="{Binding [RenameCheck]}" MinWidth="0" />
+
+                            <StackPanel Style="{StaticResource Sub}"
+                                        Visibility="{Binding IsChecked, ElementName=ChkRename, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,6"
+                                           Text="{Binding [RenameHint]}" />
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="92" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox x:Name="ChkRnName" Content="{Binding [RnName]}" IsChecked="True" MinWidth="0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="RnNameBox" Grid.Column="1"
+                                             ToolTip="{Binding [RnNameTip]}" />
+                                </Grid>
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="92" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox x:Name="ChkRnDate" Content="{Binding [RnDate]}" MinWidth="0" VerticalAlignment="Center" />
+                                    <ComboBox x:Name="CbRnDate" Grid.Column="1" SelectedIndex="0" HorizontalAlignment="Stretch">
+                                        <ComboBoxItem Content="{Binding [DateCreated]}" />
+                                        <ComboBoxItem Content="{Binding [DateModified]}" />
+                                        <ComboBoxItem Content="{Binding [DateToday]}" />
+                                    </ComboBox>
+                                </Grid>
+
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="92" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="64" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox x:Name="ChkRnNumber" Content="{Binding [RnNumber]}" IsChecked="True" MinWidth="0" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1" Text="{Binding [From]}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                    <TextBox x:Name="StartBox" Grid.Column="2" Text="1" />
+                                    <TextBlock Grid.Column="3" Text="{Binding [Digits]}" VerticalAlignment="Center" Margin="10,0,6,0" />
+                                    <ComboBox x:Name="CbDigits" Grid.Column="4" SelectedIndex="2" HorizontalAlignment="Stretch">
+                                        <ComboBoxItem Content="1" />
+                                        <ComboBoxItem Content="2" />
+                                        <ComboBoxItem Content="3" />
+                                        <ComboBoxItem Content="4" />
+                                    </ComboBox>
+                                </Grid>
+
+                                <Grid Margin="0,8,0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource Hint}" Text="{Binding [Separator]}" />
+                                        <ComboBox x:Name="CbSep" SelectedIndex="0" Margin="0,2,0,0" HorizontalAlignment="Stretch">
+                                            <ComboBoxItem Content="{Binding [SepUnderscore]}" />
+                                            <ComboBoxItem Content="{Binding [SepDash]}" />
+                                            <ComboBoxItem Content="{Binding [SepSpace]}" />
+                                            <ComboBoxItem Content="{Binding [SepDot]}" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Style="{StaticResource Hint}" Text="{Binding [NumOrder]}" />
+                                        <ComboBox x:Name="CbOrder" SelectedIndex="0" Margin="0,2,0,0" HorizontalAlignment="Stretch">
+                                            <ComboBoxItem Content="{Binding [OrderName]}" />
+                                            <ComboBoxItem Content="{Binding [OrderCreated]}" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                </Grid>
+
+                                <CheckBox x:Name="ChkNumPerFolder" IsChecked="True" MinWidth="0" Margin="0,6,0,0"
+                                          Content="{Binding [NumPerFolder]}" />
+
+                                <Border Margin="0,8,0,0" Padding="10,8" CornerRadius="6"
+                                        Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                    <TextBlock x:Name="ExampleText" TextWrapping="Wrap" FontFamily="Consolas" />
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 3. Izvršavanje -->
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{Binding [Card3]}" />
+                            <RadioButton x:Name="RbMove" GroupName="Op" IsChecked="True" Content="{Binding [OpMove]}" />
+                            <RadioButton x:Name="RbCopy" GroupName="Op" Content="{Binding [OpCopy]}" />
+
+                            <TextBlock Style="{StaticResource Hint}" Text="{Binding [Destination]}" Margin="0,10,0,2" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="DestBox" />
+                                <Button Grid.Column="1" Content="…" Margin="6,0,0,0" MinWidth="40"
+                                        Click="DestBrowse_Click" ToolTip="{Binding [DestTip]}" />
+                            </Grid>
+                            <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0"
+                                       Text="{Binding [DestHint]}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ===== Tabele (desno) ===== -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="2*" MinHeight="140" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="5*" MinHeight="200" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Margin="0,0,0,8">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="{Binding [SelectAll]}" Click="SelectAll_Click" />
+                        <Button Content="{Binding [SelectNone]}" Margin="6,0,0,0" Click="SelectNone_Click" />
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding [ExtTitle]}" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding [ExtHint]}" />
+                    </StackPanel>
+                </DockPanel>
+
+                <DataGrid x:Name="ExtGrid" Grid.Row="1"
+                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                          HeadersVisibility="Column" SelectionMode="Single" GridLinesVisibility="None">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="" Width="52">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
+                                              HorizontalAlignment="Center" MinWidth="0" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="{Binding [ColExt], Source={x:Static local:Loc.Instance}}" Width="140" IsReadOnly="True"
+                                            Binding="{Binding DisplayExtension, Mode=OneWay}" />
+                        <DataGridTextColumn Header="{Binding [ColFiles], Source={x:Static local:Loc.Instance}}" Width="90" IsReadOnly="True"
+                                            Binding="{Binding Count, Mode=OneWay}" />
+                        <DataGridTextColumn Header="{Binding [ColSize], Source={x:Static local:Loc.Instance}}" Width="100" IsReadOnly="True"
+                                            Binding="{Binding SizeText, Mode=OneWay}" />
+                        <DataGridTextColumn Header="{Binding [ColTarget], Source={x:Static local:Loc.Instance}}" Width="*"
+                                            Binding="{Binding FolderName, UpdateSourceTrigger=PropertyChanged}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <DockPanel Grid.Row="2" Margin="0,16,0,8">
+                    <TextBlock x:Name="PreviewCount" DockPanel.Dock="Right" Style="{StaticResource Hint}" VerticalAlignment="Center" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding [PreviewTitle]}" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding [PreviewHint]}" />
+                    </StackPanel>
+                </DockPanel>
+
+                <DataGrid x:Name="PreviewGrid" Grid.Row="3"
+                          AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                          HeadersVisibility="Column" GridLinesVisibility="None"
+                          EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizing="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="{Binding [ColOriginal], Source={x:Static local:Loc.Instance}}" Width="2*" IsReadOnly="True"
+                                            Binding="{Binding OriginalName, Mode=OneWay}" />
+                        <DataGridTextColumn Header="{Binding [ColNewName], Source={x:Static local:Loc.Instance}}" Width="2*"
+                                            Binding="{Binding NewName}" />
+                        <DataGridTextColumn Header="{Binding [ColFolder], Source={x:Static local:Loc.Instance}}" Width="1.3*"
+                                            Binding="{Binding TargetFolder}" />
+                        <DataGridTextColumn Header="{Binding [ColCreated], Source={x:Static local:Loc.Instance}}" Width="130" IsReadOnly="True"
+                                            Binding="{Binding Created, Mode=OneWay, StringFormat='dd.MM.yyyy HH:mm'}" />
+                        <DataGridTextColumn Header="{Binding [ColStatus], Source={x:Static local:Loc.Instance}}" Width="1.2*" IsReadOnly="True"
+                                            Binding="{Binding Status, Mode=OneWay}"
+                                            ElementStyle="{StaticResource StatusCell}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Grid>
+
+        <!-- ===================== Podnožje ===================== -->
+        <Grid Grid.Row="2" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel VerticalAlignment="Center" Margin="0,0,24,0">
+                <TextBlock x:Name="StatusText" TextTrimming="CharacterEllipsis" />
+                <ProgressBar x:Name="ProgBar" Height="4" Margin="0,8,0,0" Visibility="Collapsed" />
+            </StackPanel>
+
+            <Button x:Name="UndoBtn" Grid.Column="1" IsEnabled="False"
+                    Content="{Binding [Undo]}" Click="Undo_Click" />
+            <Button x:Name="ApplyBtn" Grid.Column="2" IsEnabled="False" MinWidth="150" Margin="8,0,0,0"
+                    Content="{Binding [Apply]}" Style="{DynamicResource AccentButtonStyle}" Click="Apply_Click" />
+        </Grid>
+    </Grid>
+    </DockPanel>
+</Window>

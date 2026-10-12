@@ -4,7 +4,8 @@ Windows aplikacija (WPF, .NET 10, Windows 11 Fluent izgled) za sortiranje fajlov
 
 ## Šta radi
 
-- Skenira izabrani folder — **samo fajlove**, podfolderi se preskaču.
+- Skenira izabrani folder — fajlove i (po želji) foldere direktno u njemu; u podfoldere se ne ulazi.
+- **Folderi** se mogu premeštati, kopirati i preimenovati isto kao fajlovi (red „📁 Folderi“ u tabeli tipova).
 - Prikazuje sve tipove fajlova (ekstenzije) sa brojem i veličinom. Obrađuju se samo štiklirani tipovi.
 - Načini sortiranja:
   - **Po tipu** — PDF → `PDF`, EXE → `Aplikacije`, slike → `Slike`… Naziv foldera za svaki tip menja se u tabeli i pamti se.
@@ -13,9 +14,11 @@ Windows aplikacija (WPF, .NET 10, Windows 11 Fluent izgled) za sortiranje fajlov
   - **Svaki fajl u svoj folder** — `Setup.exe` → `Setup\Setup.exe`, `Alat.zip` → `Alat\Alat.zip`. Ako folder istog imena već postoji (npr. raspakovan zip), fajl ide u njega.
   - **Sve u jedan folder** sa zadatim nazivom.
   - **Bez premeštanja** — samo preimenovanje.
-- **Preimenovanje** sa štikliranjem delova: ime, datum, redni broj (početni broj, broj cifara, razdvajač, redosled).
+- **Čitljiva imena**: `CPU-ZPortable_2.16_English.paf.exe` → `CPU-Z Portable 2.16 English.paf.exe` (donje crte i tačke postaju razmaci, spojene reči se razdvajaju, verzije i skraćenice ostaju).
+- **Preimenovanje po šablonu** sa štikliranjem delova: ime, datum, redni broj (početni broj, broj cifara, razdvajač, redosled).
 - **Premeštanje** (podrazumevano) ili **kopiranje**, u isti ili drugi folder.
-- **Pregled pre primene** — ništa se ne menja dok se ne klikne „Primeni“. Novo ime i folder mogu se ručno izmeniti u tabeli.
+- **Pregled pre primene** — ništa se ne menja dok se ne klikne „Primeni“. Svaka stavka ima kvačicu, a novo ime i folder mogu se ručno izmeniti u tabeli.
+- Folder u koji nešto ide (npr. `PDF` od ranijeg sortiranja) ostaje na mestu i ne premešta se sam u sebe.
 - **Poništavanje** poslednje operacije (log se čuva i posle zatvaranja programa).
 - Duplikati se nikad ne pregaze — dodaje se ` (2)`, ` (3)`…
 - Preskaču se skriveni/sistemski fajlovi, `desktop.ini`, `Thumbs.db` i privremeni Office fajlovi (`~$…`).

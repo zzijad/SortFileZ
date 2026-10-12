@@ -11,10 +11,11 @@ namespace SortFileZ;
 public partial class MainWindow : Window
 {
     private static readonly string[] Separators = { "_", "-", " ", "." };
+    private const string SampleName = "CPU-ZPortable_2.16_English.paf.exe";
 
     private readonly List<ExtensionGroup> _extensions = new();
     private List<PreviewItem> _preview = new();
-    private List<FileInfo> _files = new();
+    private List<FileSystemInfo> _files = new();
     private string? _scannedFolder;
 
     private readonly DispatcherTimer _refreshTimer;
@@ -86,6 +87,9 @@ public partial class MainWindow : Window
             NameGrouping = RbFirstLetter.IsChecked == true ? NameGrouping.FirstLetter : NameGrouping.Prefix,
             SingleFolderName = SingleFolderBox.Text,
 
+            CleanNames = ChkClean.IsChecked == true,
+            SplitWords = ChkSplit.IsChecked == true,
+
             Rename = ChkRename.IsChecked == true,
             RenameUseName = ChkRnName.IsChecked == true,
             RenameName = RnNameBox.Text,
@@ -106,8 +110,10 @@ public partial class MainWindow : Window
     private void UpdateExample()
     {
         var o = ReadOptions();
-        var sample = SortEngine.ComposeName("IMG_4412", ".jpg", o, DateTime.Now, o.StartNumber);
-        ExampleText.Text = $"{Loc.T("Example")}\nIMG_4412.jpg  →  {sample}";
+        var (stem, ext) = SortEngine.SplitName(SampleName, isDirectory: false);
+        var sample = SortEngine.ComposeName(stem, ext, o, DateTime.Now, o.StartNumber);
+        ExampleText.Text = $"{Loc.T("Example")}\n{SampleName}\n→ {sample}";
+        ExampleBorder.Visibility = o.CleanNames || o.Rename ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // ================================================================ Skeniranje
@@ -174,7 +180,7 @@ public partial class MainWindow : Window
             BuildExtensionList(keepSelection: false);
             StatusText.Text = files.Count == 0
                 ? Loc.T("MsgEmpty")
-                : Loc.F("MsgFound", files.Count, _extensions.Count);
+                : Loc.F("MsgFound", files.Count(f => f is FileInfo), files.Count(f => f is DirectoryInfo), _extensions.Count);
         }
         catch (Exception ex)
         {
@@ -193,9 +199,11 @@ public partial class MainWindow : Window
         foreach (var g in _extensions) g.PropertyChanged -= Ext_PropertyChanged;
         _extensions.Clear();
 
+        // Folderi su prvi red; ostali tipovi po broju fajlova
         var groups = _files
-            .GroupBy(SortEngine.NormExt, StringComparer.OrdinalIgnoreCase)
-            .OrderByDescending(g => g.Count())
+            .GroupBy(SortEngine.KeyFor, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key == SortEngine.FolderKey ? 0 : 1)
+            .ThenByDescending(g => g.Count())
             .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
 
         foreach (var g in groups)
@@ -205,11 +213,14 @@ public partial class MainWindow : Window
             {
                 Extension = ext,
                 Count = g.Count(),
-                TotalBytes = g.Sum(f => f.Length),
+                TotalBytes = g.Sum(f => f is FileInfo fi ? fi.Length : 0),
                 FolderName = _settings.ExtensionFolders.TryGetValue(ext, out var custom)
                     ? custom
                     : SortEngine.DefaultFolderFor(ext),
-                IsSelected = !keepSelection || !previous.TryGetValue(ext, out var sel) || sel
+                // Folderi se obrađuju samo kad ih korisnik štiklira
+                IsSelected = keepSelection && previous.TryGetValue(ext, out var sel)
+                    ? sel
+                    : ext != SortEngine.FolderKey
             };
             group.PropertyChanged += Ext_PropertyChanged;
             _extensions.Add(group);
@@ -254,20 +265,43 @@ public partial class MainWindow : Window
         {
             var o = ReadOptions();
             var map = _extensions.ToDictionary(x => x.Extension, x => x, StringComparer.OrdinalIgnoreCase);
+            foreach (var old in _preview) old.PropertyChanged -= Preview_PropertyChanged;
             _preview = SortEngine.BuildPlan(_files, _scannedFolder, o, map);
+            foreach (var item in _preview) item.PropertyChanged += Preview_PropertyChanged;
             PreviewGrid.ItemsSource = _preview;
-
-            int folders = _preview.Select(p => p.TargetFolder).Where(f => f.Length > 0)
-                .Distinct(StringComparer.OrdinalIgnoreCase).Count();
-            int renamed = _preview.Count(p => !string.Equals(p.NewName, p.OriginalName, StringComparison.Ordinal));
-            PreviewCount.Text = Loc.F("PreviewCount", _preview.Count, folders, renamed);
         }
         catch (Exception ex)
         {
             StatusText.Text = Loc.F("MsgPreviewError", ex.Message);
         }
 
-        ApplyBtn.IsEnabled = !_busy && _preview.Any(p => p.State == ItemState.Ready);
+        UpdatePreviewSummary();
+    }
+
+    private void Preview_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(PreviewItem.IsIncluded)) UpdatePreviewSummary();
+    }
+
+    private void UpdatePreviewSummary()
+    {
+        int folders = _preview.Where(p => p.State == ItemState.Ready).Select(p => p.TargetFolder)
+            .Where(f => f.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+        int renamed = _preview.Count(p => p.State == ItemState.Ready
+                                          && !string.Equals(p.NewName, p.OriginalName, StringComparison.Ordinal));
+        int selected = _preview.Count(p => p.IsIncluded && p.State == ItemState.Ready);
+        PreviewCount.Text = _preview.Count == 0 ? "" : Loc.F("PreviewCount", _preview.Count, folders, renamed, selected);
+        ApplyBtn.IsEnabled = !_busy && selected > 0;
+    }
+
+    private void PreviewAll_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var p in _preview) p.IsIncluded = true;
+    }
+
+    private void PreviewNone_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var p in _preview) p.IsIncluded = false;
     }
 
     // ================================================================ Primena
@@ -277,7 +311,7 @@ public partial class MainWindow : Window
         if (_scannedFolder == null || _busy) return;
 
         PreviewGrid.CommitEdit(DataGridEditingUnit.Row, true);
-        var items = _preview.Where(p => p.State == ItemState.Ready).ToList();
+        var items = _preview.Where(p => p.State == ItemState.Ready && p.IsIncluded).ToList();
         if (items.Count == 0) return;
 
         var o = ReadOptions();
@@ -429,6 +463,7 @@ public partial class MainWindow : Window
 
         foreach (var item in _preview) item.RefreshStatus();
         if (_files.Count > 0) BuildExtensionList(keepSelection: true); // podrazumevani nazivi foldera na novom jeziku
+        UpdatePreviewSummary();
 
         _ready = wasReady;
         UpdateExample();
@@ -454,7 +489,7 @@ public partial class MainWindow : Window
         FolderBox.IsEnabled = !busy;
         ScanBtn.IsEnabled = !busy;
         BrowseBtn.IsEnabled = !busy;
-        ApplyBtn.IsEnabled = !busy && _preview.Any(p => p.State == ItemState.Ready);
+        ApplyBtn.IsEnabled = !busy && _preview.Any(p => p.State == ItemState.Ready && p.IsIncluded);
         UndoBtn.IsEnabled = !busy && UndoLog.Exists();
         ProgBar.IsIndeterminate = busy && indeterminate;
         ProgBar.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;

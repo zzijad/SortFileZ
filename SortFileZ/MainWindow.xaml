@@ -181,10 +181,18 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- 2. Preimenovanje -->
+                    <!-- 2. Imena -->
                     <Border Style="{StaticResource Card}">
                         <StackPanel>
                             <TextBlock Style="{StaticResource CardTitle}" Text="{Binding [Card2]}" />
+
+                            <CheckBox x:Name="ChkClean" Content="{Binding [CleanCheck]}" MinWidth="0" />
+                            <StackPanel Style="{StaticResource Sub}"
+                                        Visibility="{Binding IsChecked, ElementName=ChkClean, Converter={StaticResource BoolToVis}}">
+                                <CheckBox x:Name="ChkSplit" Content="{Binding [SplitWords]}" IsChecked="True" MinWidth="0" />
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0" Text="{Binding [CleanHint]}" />
+                            </StackPanel>
+
                             <CheckBox x:Name="ChkRename" Content="{Binding [RenameCheck]}" MinWidth="0" />
 
                             <StackPanel Style="{StaticResource Sub}"
@@ -261,12 +269,12 @@
 
                                 <CheckBox x:Name="ChkNumPerFolder" IsChecked="True" MinWidth="0" Margin="0,6,0,0"
                                           Content="{Binding [NumPerFolder]}" />
-
-                                <Border Margin="0,8,0,0" Padding="10,8" CornerRadius="6"
-                                        Background="{DynamicResource SubtleFillColorSecondaryBrush}">
-                                    <TextBlock x:Name="ExampleText" TextWrapping="Wrap" FontFamily="Consolas" />
-                                </Border>
                             </StackPanel>
+
+                            <Border x:Name="ExampleBorder" Margin="0,8,0,0" Padding="10,8" CornerRadius="6"
+                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                <TextBlock x:Name="ExampleText" TextWrapping="Wrap" FontFamily="Consolas" />
+                            </Border>
                         </StackPanel>
                     </Border>
 
@@ -338,7 +346,11 @@
                 </DataGrid>
 
                 <DockPanel Grid.Row="2" Margin="0,16,0,8">
-                    <TextBlock x:Name="PreviewCount" DockPanel.Dock="Right" Style="{StaticResource Hint}" VerticalAlignment="Center" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="PreviewCount" Style="{StaticResource Hint}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <Button Content="{Binding [PreviewAll]}" Click="PreviewAll_Click" />
+                        <Button Content="{Binding [PreviewNone]}" Margin="6,0,0,0" Click="PreviewNone_Click" />
+                    </StackPanel>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="{Binding [PreviewTitle]}" FontSize="15" FontWeight="SemiBold" />
                         <TextBlock Style="{StaticResource Hint}" Text="{Binding [PreviewHint]}" />
@@ -350,8 +362,16 @@
                           HeadersVisibility="Column" GridLinesVisibility="None"
                           EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizing="True">
                     <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="" Width="52">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsIncluded, UpdateSourceTrigger=PropertyChanged}"
+                                              HorizontalAlignment="Center" MinWidth="0" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Header="{Binding [ColOriginal], Source={x:Static local:Loc.Instance}}" Width="2*" IsReadOnly="True"
-                                            Binding="{Binding OriginalName, Mode=OneWay}" />
+                                            Binding="{Binding DisplayName, Mode=OneWay}" />
                         <DataGridTextColumn Header="{Binding [ColNewName], Source={x:Static local:Loc.Instance}}" Width="2*"
                                             Binding="{Binding NewName}" />
                         <DataGridTextColumn Header="{Binding [ColFolder], Source={x:Static local:Loc.Instance}}" Width="1.3*"

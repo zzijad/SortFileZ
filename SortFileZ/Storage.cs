@@ -53,6 +53,7 @@ public sealed class UndoEntry
 {
     public string From { get; set; } = "";
     public string To { get; set; } = "";
+    public bool IsDirectory { get; set; }
 }
 
 public sealed class UndoLog

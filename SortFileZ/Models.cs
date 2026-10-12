@@ -42,7 +42,11 @@ public sealed class SortOptions
     // Jedan folder
     public string SingleFolderName { get; set; } = "";
 
-    // Preimenovanje
+    // Čitljiva imena
+    public bool CleanNames { get; set; }
+    public bool SplitWords { get; set; } = true;
+
+    // Preimenovanje po šablonu
     public bool Rename { get; set; }
     public bool RenameUseName { get; set; } = true;
     public string RenameName { get; set; } = "";
@@ -66,8 +70,12 @@ public sealed class ExtensionGroup : ObservableObject
     public int Count { get; init; }
     public long TotalBytes { get; init; }
 
-    public string DisplayExtension => string.IsNullOrEmpty(Extension) ? Loc.T("NoExtDisplay") : Extension;
-    public string SizeText => SortEngine.FormatSize(TotalBytes);
+    public bool IsFolder => Extension == SortEngine.FolderKey;
+
+    public string DisplayExtension => IsFolder ? Loc.T("FolderRow")
+        : string.IsNullOrEmpty(Extension) ? Loc.T("NoExtDisplay") : Extension;
+
+    public string SizeText => IsFolder ? "—" : SortEngine.FormatSize(TotalBytes);
 
     private bool _isSelected = true;
     public bool IsSelected { get => _isSelected; set => Set(ref _isSelected, value); }
@@ -80,7 +88,13 @@ public sealed class PreviewItem : ObservableObject
 {
     public string SourcePath { get; init; } = "";
     public string OriginalName { get; init; } = "";
+    public bool IsDirectory { get; init; }
     public DateTime Created { get; init; }
+
+    public string DisplayName => IsDirectory ? "📁 " + OriginalName : OriginalName;
+
+    private bool _isIncluded = true;
+    public bool IsIncluded { get => _isIncluded; set => Set(ref _isIncluded, value); }
 
     private string _newName = "";
     public string NewName { get => _newName; set => Set(ref _newName, value); }
@@ -90,6 +104,9 @@ public sealed class PreviewItem : ObservableObject
 
     public bool IsCopy { get; set; }
     public string ErrorMessage { get; private set; } = "";
+
+    /// <summary>Ključ prevoda za razlog preskakanja (npr. odredišni folder).</summary>
+    public string? SkipKey { get; private set; }
 
     private ItemState _state = ItemState.Ready;
     public ItemState State
@@ -105,10 +122,17 @@ public sealed class PreviewItem : ObservableObject
     public string Status => State switch
     {
         ItemState.Done => Loc.T(IsCopy ? "StCopied" : "StMoved"),
-        ItemState.Skipped => Loc.T("StNoChange"),
+        ItemState.Skipped => Loc.T(SkipKey ?? "StNoChange"),
         ItemState.Error => Loc.F("StError", ErrorMessage),
         _ => Loc.T("StReady")
     };
+
+    public void Skip(string reasonKey)
+    {
+        SkipKey = reasonKey;
+        State = ItemState.Skipped;
+        RefreshStatus();
+    }
 
     public void SetError(string message)
     {

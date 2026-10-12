@@ -16,6 +16,12 @@ public sealed class AppSettings
     /// <summary>"sr" ili "en".</summary>
     public string Language { get; set; } = "sr";
 
+    // Zapamćene opcije za imena
+    public bool CleanNames { get; set; }
+    public bool SplitWords { get; set; } = true;
+    public bool CapitalizeFirst { get; set; }
+    public bool CapitalizeWords { get; set; }
+
     /// <summary>Korisnički nazivi foldera po ekstenziji (npr. ".exe" → "App").</summary>
     public Dictionary<string, string> ExtensionFolders { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 

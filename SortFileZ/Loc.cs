@@ -160,6 +160,9 @@ public sealed class Loc : INotifyPropertyChanged
         ["FolderRow"] = "📁 Folderi",
         ["Cat_Folders"] = "Folderi",
         ["StDestFolder"] = "Ostaje — odredišni folder",
+        ["CapFirst"] = "Veliko početno slovo (dokument.pdf → Dokument.pdf)",
+        ["CapWords"] = "Svaka reč velikim slovom (media player → Media Player)",
+        ["CapHint"] = "Menjaju se samo reči pisane malim slovima — iPhone, eBook, v2, x64 ostaju.",
     };
 
     private static readonly Dictionary<string, string> En = new()
@@ -303,6 +306,9 @@ public sealed class Loc : INotifyPropertyChanged
         ["FolderRow"] = "📁 Folders",
         ["Cat_Folders"] = "Folders",
         ["StDestFolder"] = "Kept — destination folder",
+        ["CapFirst"] = "Capital first letter (document.pdf → Document.pdf)",
+        ["CapWords"] = "Capitalize every word (media player → Media Player)",
+        ["CapHint"] = "Only all-lowercase words change — iPhone, eBook, v2, x64 stay as they are.",
     };
 
     public static Loc Instance { get; } = new();

@@ -46,6 +46,10 @@ public sealed class SortOptions
     public bool CleanNames { get; set; }
     public bool SplitWords { get; set; } = true;
 
+    // Velika slova
+    public bool CapitalizeFirst { get; set; }
+    public bool CapitalizeWords { get; set; }
+
     // Preimenovanje po šablonu
     public bool Rename { get; set; }
     public bool RenameUseName { get; set; } = true;

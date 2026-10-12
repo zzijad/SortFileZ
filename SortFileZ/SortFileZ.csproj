@@ -10,7 +10,7 @@
     <AssemblyName>SortFileZ</AssemblyName>
     <RootNamespace>SortFileZ</RootNamespace>
     <Product>SortFileZ</Product>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <NoWarn>$(NoWarn);WPF0001</NoWarn>

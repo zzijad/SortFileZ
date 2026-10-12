@@ -223,24 +223,68 @@ public static class SortEngine
         return string.IsNullOrWhiteSpace(prefix) ? Loc.T("FolderOther") : prefix;
     }
 
-    /// <summary>Novo ime: (očišćeno) originalno ime, ili šablon ime + datum + broj. Ekstenzija ostaje.</summary>
+    /// <summary>
+    /// Novo ime: (očišćeno) originalno ime, ili šablon ime + datum + broj, uz opciono veliko početno slovo.
+    /// Ekstenzija ostaje kakva jeste.
+    /// </summary>
     public static string ComposeName(string originalStem, string ext, SortOptions o, DateTime date, int number)
     {
-        var baseStem = o.CleanNames ? CleanName(originalStem, o.SplitWords) : originalStem;
-        if (!o.Rename)
-            return o.CleanNames ? SanitizeName(baseStem + ext) : originalStem + ext;
+        bool changes = o.CleanNames || o.Rename || o.CapitalizeFirst;
+        if (!changes) return originalStem + ext;
 
-        var parts = new List<string>();
-        if (o.RenameUseName)
-            parts.Add(string.IsNullOrWhiteSpace(o.RenameName) ? baseStem : o.RenameName.Trim());
-        if (o.RenameUseDate)
-            parts.Add(FormatDate(date, DateGranularity.Day, o.IsoDateFormat));
-        if (o.RenameUseNumber)
-            parts.Add(number.ToString(new string('0', Math.Max(1, o.Digits)), CultureInfo.InvariantCulture));
+        var stem = o.CleanNames ? CleanName(originalStem, o.SplitWords) : originalStem;
 
-        parts.RemoveAll(string.IsNullOrWhiteSpace);
-        if (parts.Count == 0) return SanitizeName(baseStem + ext);
-        return SanitizeName(string.Join(o.Separator, parts)) + ext;
+        if (o.Rename)
+        {
+            var parts = new List<string>();
+            if (o.RenameUseName)
+                parts.Add(string.IsNullOrWhiteSpace(o.RenameName) ? stem : o.RenameName.Trim());
+            if (o.RenameUseDate)
+                parts.Add(FormatDate(date, DateGranularity.Day, o.IsoDateFormat));
+            if (o.RenameUseNumber)
+                parts.Add(number.ToString(new string('0', Math.Max(1, o.Digits)), CultureInfo.InvariantCulture));
+
+            parts.RemoveAll(string.IsNullOrWhiteSpace);
+            if (parts.Count > 0) stem = string.Join(o.Separator, parts);
+        }
+
+        if (o.CapitalizeFirst) stem = Capitalize(stem, o.CapitalizeWords);
+
+        // Ime bez osnove (npr. ".gitignore") ostaje kakvo jeste
+        if (string.IsNullOrWhiteSpace(stem)) return originalStem + ext;
+        return SanitizeName(stem) + ext;
+    }
+
+    /// <summary>
+    /// Veliko početno slovo: "dokument final" → "Dokument final"; sa <paramref name="everyWord"/>: "Dokument Final".
+    /// Menjaju se samo obične reči malim slovima — "iPhone", "eBook", "v2", "x64" ostaju.
+    /// </summary>
+    public static string Capitalize(string text, bool everyWord)
+    {
+        var chars = text.ToCharArray();
+        int i = 0;
+        while (i < chars.Length)
+        {
+            if (!char.IsLetterOrDigit(chars[i])) { i++; continue; }
+
+            int start = i;
+            while (i < chars.Length && (char.IsLetterOrDigit(chars[i]) || chars[i] == '\''))
+                i++;
+
+            bool hasLetter = false, plainLower = true;
+            for (int k = start; k < i; k++)
+            {
+                if (char.IsLetter(chars[k])) hasLetter = true;
+                if (char.IsUpper(chars[k]) || char.IsDigit(chars[k])) plainLower = false;
+            }
+
+            if (hasLetter && plainLower)
+                chars[start] = char.ToUpper(chars[start], CultureInfo.InvariantCulture);
+
+            // Bez "svaka reč" menja se samo prva reč koja ima slova
+            if (hasLetter && !everyWord) break;
+        }
+        return new string(chars);
     }
 
     public static string SanitizeName(string s)

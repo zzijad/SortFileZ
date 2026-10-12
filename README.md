@@ -15,6 +15,7 @@ Windows aplikacija (WPF, .NET 10, Windows 11 Fluent izgled) za sortiranje fajlov
   - **Sve u jedan folder** sa zadatim nazivom.
   - **Bez premeštanja** — samo preimenovanje.
 - **Čitljiva imena**: `CPU-ZPortable_2.16_English.paf.exe` → `CPU-Z Portable 2.16 English.paf.exe` (donje crte i tačke postaju razmaci, spojene reči se razdvajaju, verzije i skraćenice ostaju).
+- **Veliko početno slovo** (`dokument.pdf` → `Dokument.pdf`), opciono svaka reč velikim slovom; `iPhone`, `v2`, `x64` ostaju.
 - **Preimenovanje po šablonu** sa štikliranjem delova: ime, datum, redni broj (početni broj, broj cifara, razdvajač, redosled).
 - **Premeštanje** (podrazumevano) ili **kopiranje**, u isti ili drugi folder.
 - **Pregled pre primene** — ništa se ne menja dok se ne klikne „Primeni“. Svaka stavka ima kvačicu, a novo ime i folder mogu se ručno izmeniti u tabeli.

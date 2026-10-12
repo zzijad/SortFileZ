@@ -44,6 +44,11 @@ public partial class MainWindow : Window
         if (!string.IsNullOrEmpty(_settings.LastFolder) && Directory.Exists(_settings.LastFolder))
             FolderBox.Text = _settings.LastFolder;
 
+        ChkClean.IsChecked = _settings.CleanNames;
+        ChkSplit.IsChecked = _settings.SplitWords;
+        ChkCap.IsChecked = _settings.CapitalizeFirst;
+        ChkCapWords.IsChecked = _settings.CapitalizeWords;
+
         ApplyLanguage(_settings.Language);
         _ready = true;
         UndoBtn.IsEnabled = UndoLog.Exists();
@@ -89,6 +94,8 @@ public partial class MainWindow : Window
 
             CleanNames = ChkClean.IsChecked == true,
             SplitWords = ChkSplit.IsChecked == true,
+            CapitalizeFirst = ChkCap.IsChecked == true,
+            CapitalizeWords = ChkCapWords.IsChecked == true,
 
             Rename = ChkRename.IsChecked == true,
             RenameUseName = ChkRnName.IsChecked == true,
@@ -113,7 +120,7 @@ public partial class MainWindow : Window
         var (stem, ext) = SortEngine.SplitName(SampleName, isDirectory: false);
         var sample = SortEngine.ComposeName(stem, ext, o, DateTime.Now, o.StartNumber);
         ExampleText.Text = $"{Loc.T("Example")}\n{SampleName}\n→ {sample}";
-        ExampleBorder.Visibility = o.CleanNames || o.Rename ? Visibility.Visible : Visibility.Collapsed;
+        ExampleBorder.Visibility = o.CleanNames || o.Rename || o.CapitalizeFirst ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // ================================================================ Skeniranje
@@ -364,6 +371,7 @@ public partial class MainWindow : Window
         finally
         {
             SetBusy(false);
+            RememberNameOptions();
             _settings.Save();
         }
     }
@@ -499,6 +507,15 @@ public partial class MainWindow : Window
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
         try { ExtGrid.CommitEdit(DataGridEditingUnit.Row, true); } catch { }
+        RememberNameOptions();
         _settings.Save();
+    }
+
+    private void RememberNameOptions()
+    {
+        _settings.CleanNames = ChkClean.IsChecked == true;
+        _settings.SplitWords = ChkSplit.IsChecked == true;
+        _settings.CapitalizeFirst = ChkCap.IsChecked == true;
+        _settings.CapitalizeWords = ChkCapWords.IsChecked == true;
     }
 }

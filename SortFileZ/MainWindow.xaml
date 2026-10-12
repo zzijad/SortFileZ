@@ -193,6 +193,13 @@
                                 <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0" Text="{Binding [CleanHint]}" />
                             </StackPanel>
 
+                            <CheckBox x:Name="ChkCap" Content="{Binding [CapFirst]}" MinWidth="0" />
+                            <StackPanel Style="{StaticResource Sub}"
+                                        Visibility="{Binding IsChecked, ElementName=ChkCap, Converter={StaticResource BoolToVis}}">
+                                <CheckBox x:Name="ChkCapWords" Content="{Binding [CapWords]}" MinWidth="0" />
+                                <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0" Text="{Binding [CapHint]}" />
+                            </StackPanel>
+
                             <CheckBox x:Name="ChkRename" Content="{Binding [RenameCheck]}" MinWidth="0" />
 
                             <StackPanel Style="{StaticResource Sub}"
